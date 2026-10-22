@@ -1,17 +1,35 @@
 
+import os
+
 import requests
+from dotenv import load_dotenv
 
 from src.retriever import retrieve_relevant_chunks
 
 
+load_dotenv()
+
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 LLM_MODEL = "llama3.2:3b"
+
+# Experimental relevance threshold.
+# We will validate this using our three evaluation questions.
+MIN_SIMILARITY_SCORE = float(
+    os.getenv("RAG_MIN_SIMILARITY_SCORE", "0.65")
+)
+
+INSUFFICIENT_CONTEXT_MESSAGE = (
+    "The available research papers do not contain sufficient "
+    "relevant information to answer this question."
+)
 
 
 def generate_rag_answer(question: str, top_k: int = 3) -> dict:
     """
     Retrieve relevant research-paper chunks and generate
     a grounded answer using the local Ollama LLM.
+
+    Reject low-similarity passages before answer generation.
     """
 
     question = question.strip()
@@ -19,25 +37,38 @@ def generate_rag_answer(question: str, top_k: int = 3) -> dict:
     if not question:
         raise ValueError("Question cannot be empty.")
 
-    # STEP 1: Retrieve relevant research-paper chunks
-    chunks = retrieve_relevant_chunks(
+    # STEP 1: Retrieve candidate passages from MongoDB.
+    retrieved_chunks = retrieve_relevant_chunks(
         question=question,
         top_k=top_k
     )
 
-    if not chunks:
+    # STEP 2: Apply the experimental relevance threshold.
+    relevant_chunks = []
+
+    for chunk in retrieved_chunks:
+        score = chunk.get("similarity_score")
+
+        if score is None:
+            continue
+
+        if float(score) >= MIN_SIMILARITY_SCORE:
+            relevant_chunks.append(chunk)
+
+    # If all retrieved passages are rejected, do not call Ollama.
+    if not relevant_chunks:
         return {
             "question": question,
-            "answer": "No relevant research-paper content was found.",
+            "answer": INSUFFICIENT_CONTEXT_MESSAGE,
             "sources": [],
             "model": LLM_MODEL
         }
 
-    # STEP 2: Prepare retrieved context
+    # STEP 3: Prepare relevant context and source references.
     context_parts = []
     sources = []
 
-    for index, chunk in enumerate(chunks, start=1):
+    for chunk in relevant_chunks:
         source = str(chunk.get("source") or "Unknown document")
         page = chunk.get("page_number")
         section = str(chunk.get("section") or "Unknown section")
@@ -46,7 +77,7 @@ def generate_rag_answer(question: str, top_k: int = 3) -> dict:
         if not text:
             continue
 
-        reference = f"[{index}]"
+        reference = f"[{len(sources) + 1}]"
 
         context_parts.append(
             f"{reference}\n"
@@ -68,14 +99,14 @@ def generate_rag_answer(question: str, top_k: int = 3) -> dict:
     if not context_parts:
         return {
             "question": question,
-            "answer": "The retrieved passages contained no usable text.",
+            "answer": INSUFFICIENT_CONTEXT_MESSAGE,
             "sources": [],
             "model": LLM_MODEL
         }
 
     context = "\n\n---\n\n".join(context_parts)
 
-    # STEP 3: Construct a grounded RAG prompt
+    # STEP 4: Construct the grounded RAG prompt.
     prompt = f"""
 You are a research-paper question-answering assistant.
 
@@ -104,7 +135,7 @@ USER QUESTION:
 ANSWER:
 """.strip()
 
-    # STEP 4: Send context and question to Ollama
+    # STEP 5: Generate an answer using Ollama.
     try:
         response = requests.post(
             OLLAMA_URL,
