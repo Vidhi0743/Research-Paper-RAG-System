@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Research RAG | AI Research Assistant</title>
+
+    <link rel="stylesheet" href="/static/style.css?v=4">
+    <script src="/static/script.js?v=4" defer></script>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="site-header">
+        <div class="header-inner">
+
+            <div class="brand">
+                <div class="brand-icon">R</div>
+
+                <div>
+                    <h1>Research RAG</h1>
+                    <p>AI-Powered Research Paper Assistant</p>
+                </div>
+            </div>
+
+            <span id="database-indicator" class="status-pill">
+                Checking database...
+            </span>
+
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="container">
+
+        <!-- INTRODUCTION -->
+        <section class="hero">
+            <span class="eyebrow">RETRIEVAL-AUGMENTED GENERATION</span>
+
+            <h2>Ask questions. Explore research.</h2>
+
+            <p>
+                Get AI-generated answers grounded in our research-paper
+                knowledge base, with supporting paper references and
+                page numbers.
+            </p>
+        </section>
+
+        <!-- KNOWLEDGE BASE INFORMATION -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <span>Research Papers</span>
+                <strong>3</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Knowledge Base Chunks</span>
+                <strong id="total-chunks-stat">--</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Language Model</span>
+                <strong>Llama 3.2</strong>
+            </div>
+
+        </section>
+
+        <!-- CHATBOT -->
+        <section class="panel chat-panel">
+
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">RESEARCH ASSISTANT</span>
+
+                    <h2>Ask your research question</h2>
+
+                    <p>
+                        Your question will be matched with relevant research
+                        passages before the AI generates an answer.
+                    </p>
+                </div>
+            </div>
+
+            <!-- QUESTION FORM -->
+            <form id="chat-form">
+
+                <label for="research-question">
+                    Your Question
+                </label>
+
+                <textarea
+                    id="research-question"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="How does retrieval-augmented generation combine parametric and non-parametric memory?"
+                    required
+                ></textarea>
+
+                <div class="chat-actions">
+
+                    <div class="result-count">
+                        <label for="top-k">Retrieve passages</label>
+
+                        <select id="top-k">
+                            <option value="3" selected>Top 3</option>
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                        </select>
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="ask-button"
+                        class="primary-button"
+                    >
+                        Ask Research Assistant
+                    </button>
+
+                </div>
+
+            </form>
+
+            <!-- LOADING / ERROR MESSAGE -->
+            <p
+                id="chat-message"
+                class="message"
+                role="status"
+                aria-live="polite"
+            ></p>
+
+            <!-- RESPONSE -->
+            <div id="answer-section" class="answer-section" hidden>
+
+                <div class="answer-header">
+                    <span class="eyebrow">GENERATED RESPONSE</span>
+                    <h3>AI Answer</h3>
+                </div>
+
+                <div id="answer-content" class="answer-content"></div>
+
+                <div class="sources-section">
+                    <h3>Supporting Sources</h3>
+
+                    <p class="muted">
+                        Research-paper passages retrieved from MongoDB
+                        Vector Search.
+                    </p>
+
+                    <div id="sources-list" class="sources-list"></div>
+                </div>
+
+                <p id="model-info" class="model-info"></p>
+
+            </div>
+
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            Research Paper RAG |
+            FastAPI |
+            MongoDB Vector Search |
+            Sentence Transformers |
+            Ollama
+        </footer>
+
+    </main>
+
+</body>
+</html>
